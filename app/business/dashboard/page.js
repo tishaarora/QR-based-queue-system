@@ -33,6 +33,11 @@ export default function BusinessDashboard() {
   const [authorized, setAuthorized] =
     useState(false);
 
+  const [
+    nextWaitingToken,
+    setNextWaitingToken,
+  ] = useState(null);
+
   const router = useRouter();
 
   const checkBusinessAccess =
@@ -89,7 +94,21 @@ export default function BusinessDashboard() {
 
     if (data.success) {
       setEntries(data.entries);
+
+      const nextWaiting =
+        data.entries.find(
+          (entry) =>
+            entry.status ===
+            "waiting"
+        );
+
+      setNextWaitingToken(
+        nextWaiting
+          ? nextWaiting.tokenNumber
+          : null
+      );
     }
+
   };
 
   useEffect(() => {
@@ -640,6 +659,11 @@ const handleCloseQueue =
           <p>
             Currently Serving:
             {currentToken || "None"}
+          </p>
+          <p>
+            Next Waiting:
+            {nextWaitingToken ||
+              "None"}
           </p>
 
           <button
