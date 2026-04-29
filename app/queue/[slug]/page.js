@@ -61,9 +61,19 @@ export default function JoinQueuePage() {
   };
 
   useEffect(() => {
-    if (params.slug) {
-      checkEntry();
-    }
+    if (!params.slug) return;
+
+    checkEntry();
+
+    const interval =
+      setInterval(() => {
+        checkEntry();
+      }, 5000);
+
+    return () =>
+      clearInterval(
+        interval
+      );
   }, [params.slug]);
 
   const handleJoin = async () => {

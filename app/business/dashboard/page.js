@@ -100,9 +100,19 @@ export default function BusinessDashboard() {
   }, [authorized]);
 
   useEffect(() => {
-    if (sessionId) {
-      fetchEntries();
-    }
+    if (!sessionId) return;
+
+    fetchEntries();
+
+    const interval =
+      setInterval(() => {
+        fetchEntries();
+      }, 5000);
+
+    return () =>
+      clearInterval(
+        interval
+      );
   }, [sessionId]);
 
   const handleCreateQueue =
