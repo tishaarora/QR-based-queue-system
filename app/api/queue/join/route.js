@@ -79,13 +79,36 @@ export async function POST(req) {
     await activeSession.save();
 
     const queueEntry =
-      await QueueEntry.create({
-        sessionId:
-          activeSession._id,
-        customerId: user._id,
-        tokenNumber: nextToken,
-        status: "waiting",
-      });
+      await QueueEntry.findOneAndUpdate(
+        {
+          sessionId:
+            activeSession._id,
+          customerId:
+            user._id,
+          status: {
+            $in: [
+              "waiting",
+              "called",
+            ],
+          },
+        },
+        {
+          $setOnInsert: {
+            sessionId:
+              activeSession._id,
+            customerId:
+              user._id,
+            tokenNumber:
+              nextToken,
+            status:
+              "waiting",
+          },
+        },
+        {
+          upsert: true,
+          new: true,
+        }
+      );
 
     return Response.json({
       success: true,

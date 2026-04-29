@@ -7,7 +7,9 @@ import Queue from "@/models/Queue";
 
 function generateSlug(name) {
   return (
-    name.toLowerCase().replace(/\s+/g, "-") +
+    name
+      .toLowerCase()
+      .replace(/\s+/g, "-") +
     "-" +
     Date.now()
   );
@@ -15,11 +17,15 @@ function generateSlug(name) {
 
 export async function POST(req) {
   try {
-    const session = await getServerSession();
+    const session =
+      await getServerSession();
 
     if (!session) {
       return Response.json(
-        { message: "Unauthorized" },
+        {
+          message:
+            "Unauthorized",
+        },
         { status: 401 }
       );
     }
@@ -28,14 +34,18 @@ export async function POST(req) {
 
     const body = await req.json();
 
-    const user = await User.findOne({
-      email: session.user.email,
-    });
+    const user =
+      await User.findOne({
+        email:
+          session.user.email,
+      });
 
     const businessProfile =
-      await BusinessProfile.findOne({
-        ownerId: user._id,
-      });
+      await BusinessProfile.findOne(
+        {
+          ownerId: user._id,
+        }
+      );
 
     if (!businessProfile) {
       return Response.json(
@@ -47,17 +57,40 @@ export async function POST(req) {
       );
     }
 
-    const slug = generateSlug(
-      body.queueName
-    );
+    const existingQueue =
+      await Queue.findOne({
+        businessProfileId:
+          businessProfile._id,
+        queueName:
+          body.queueName.trim(),
+      });
 
-    const queue = await Queue.create({
-      businessProfileId:
-        businessProfile._id,
-      queueName: body.queueName,
-      queueSlug: slug,
-      qrCodeUrl: `/queue/${slug}`,
-    });
+    if (existingQueue) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            "Queue name already exists",
+        },
+        { status: 400 }
+      );
+    }
+
+    const slug =
+      generateSlug(
+        body.queueName.trim()
+      );
+
+    const queue =
+      await Queue.create({
+        businessProfileId:
+          businessProfile._id,
+        queueName:
+          body.queueName.trim(),
+        queueSlug: slug,
+        qrCodeUrl:
+          `/queue/${slug}`,
+      });
 
     return Response.json({
       success: true,
@@ -67,7 +100,8 @@ export async function POST(req) {
     return Response.json(
       {
         success: false,
-        error: error.message,
+        error:
+          error.message,
       },
       { status: 500 }
     );

@@ -115,27 +115,42 @@ export default function BusinessDashboard() {
       );
   }, [sessionId]);
 
-  const handleCreateQueue =
-    async (e) => {
-      e.preventDefault();
+const handleCreateQueue =
+  async (e) => {
+    e.preventDefault();
 
-      await fetch(
-        "/api/queue/create",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            queueName,
-          }),
-        }
-      );
+    const res = await fetch(
+      "/api/queue/create",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          queueName,
+        }),
+      }
+    );
 
+    const data =
+      await res.json();
+
+    if (data.success) {
       setQueueName("");
+
       fetchQueues();
-    };
+
+      alert(
+        "Queue created successfully"
+      );
+    } else {
+      alert(
+        data.message ||
+          data.error
+      );
+    }
+  };
 
   const handleSessionInputChange =
     (queueId, value) => {
