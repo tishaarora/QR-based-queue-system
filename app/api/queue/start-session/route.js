@@ -46,6 +46,7 @@ export async function POST(req) {
           body.sessionName,
         status: "active",
         currentToken: 0,
+        lastToken: 0,
       });
 
     return Response.json({

@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 
 import QueueEntry from "@/models/QueueEntry";
-
+import QueueSession from "@/models/QueueSession";
 export async function POST(req) {
   try {
     const session = await getServerSession();
@@ -49,6 +49,18 @@ export async function POST(req) {
       "completed";
 
     await currentEntry.save();
+
+    const queueSession =
+      await QueueSession.findById(
+        currentEntry.sessionId
+      );
+
+    if (queueSession) {
+      queueSession.currentToken =
+        0;
+
+      await queueSession.save();
+    }
 
     return Response.json({
       success: true,

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 
 import QueueEntry from "@/models/QueueEntry";
+import QueueSession from "@/models/QueueSession";
 
 export async function POST(req) {
   try {
@@ -20,6 +21,19 @@ export async function POST(req) {
     await connectDB();
 
     const body = await req.json();
+
+    const queueSession =
+      await QueueSession.findById(
+        body.sessionId
+      );
+
+    if (!queueSession) {
+      return Response.json({
+        success: false,
+        message:
+          "Session not found",
+      });
+    }
 
     // complete current called customer
     const currentCalled =
@@ -47,6 +61,18 @@ export async function POST(req) {
       });
 
     if (!nextEntry) {
+      const queueSession =
+        await QueueSession.findById(
+          body.sessionId
+        );
+
+      if (queueSession) {
+        queueSession.currentToken =
+          0;
+
+        await queueSession.save();
+      }
+
       return Response.json({
         success: false,
         message:
@@ -57,6 +83,11 @@ export async function POST(req) {
     nextEntry.status = "called";
 
     await nextEntry.save();
+
+    queueSession.currentToken =
+      nextEntry.tokenNumber;
+
+    await queueSession.save();
 
     return Response.json({
       success: true,

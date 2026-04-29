@@ -26,6 +26,10 @@ const QueueSessionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    lastToken: {
+      type: Number,
+      default: 0,
+    },
 
     currentToken: {
       type: Number,

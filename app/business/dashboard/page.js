@@ -21,6 +21,9 @@ export default function BusinessDashboard() {
   const [sessionId, setSessionId] =
     useState("");
 
+  const [currentToken, setCurrentToken] =
+  useState(0);
+
   const [selectedQueueName, setSelectedQueueName] =
     useState("");
 
@@ -202,6 +205,10 @@ const handleCreateQueue =
           data.session.sessionName
         );
 
+        setCurrentToken(
+          data.session.currentToken
+        );
+
         fetchQueues();
       }
     };
@@ -220,6 +227,12 @@ const handleCreateQueue =
         queue.activeSession
           .sessionName
       );
+
+      setCurrentToken(
+        queue.activeSession
+          .currentToken
+      );
+
     };
 
 const handleResetQueue =
@@ -268,6 +281,10 @@ const handleResetQueue =
 
       setActiveSessionName(
         data.session.sessionName
+      );
+
+      setCurrentToken(
+        data.session.currentToken
       );
 
       setEntries([]);
@@ -412,6 +429,18 @@ const handleCloseQueue =
 
       const data = await res.json();
 
+      if (data.success) {
+        setCurrentToken(
+          data.queueEntry
+            .tokenNumber
+        );
+      } else if (
+        data.message ===
+        "No waiting customers"
+      ) {
+        setCurrentToken(0);
+      }
+
       alert(
         data.success
           ? `Calling token ${data.queueEntry.tokenNumber}`
@@ -440,6 +469,8 @@ const handleCloseQueue =
       const data = await res.json();
 
       if (data.success) {
+        setCurrentToken(0);
+
         fetchEntries();
       }
     };
@@ -605,6 +636,10 @@ const handleCloseQueue =
           <p>
             Session:
             {activeSessionName}
+          </p>
+          <p>
+            Currently Serving:
+            {currentToken || "None"}
           </p>
 
           <button

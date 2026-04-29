@@ -71,9 +71,9 @@ export async function POST(req) {
   }
 
     const nextToken =
-      activeSession.currentToken + 1;
+      (activeSession.lastToken || 0) + 1;
 
-    activeSession.currentToken =
+    activeSession.lastToken =
       nextToken;
 
     await activeSession.save();
