@@ -38,6 +38,11 @@ export default function BusinessDashboard() {
     setNextWaitingToken,
   ] = useState(null);
 
+  const [
+  businessProfile,
+  setBusinessProfile,
+] = useState(null);
+
   const router = useRouter();
 
   const checkBusinessAccess =
@@ -57,7 +62,9 @@ export default function BusinessDashboard() {
         );
         return;
       }
-
+      setBusinessProfile(
+        data.businessProfile
+      );
       setAuthorized(true);
     };
 
@@ -509,7 +516,11 @@ const handleCloseQueue =
       </div>
 
       <div className="mt-6">
-        <ProfileCard businessName="Ishy Cafe" />
+        <ProfileCard
+          businessName={
+            businessProfile?.businessName
+          }
+        />
       </div>
 
       <form
@@ -621,7 +632,7 @@ const handleCloseQueue =
                       queue
                     )
                   }
-                  className="mt-2 ml-2 bg-yellow-500 text-white px-4 py-2"
+                  className="mt-2 ml-2 border bg-black text-white px-4 py-2"
                 >
                   {queue.activeSession
                     .status ===
@@ -635,7 +646,7 @@ const handleCloseQueue =
                     queue
                   )
                 }
-                className="mt-2 ml-2 bg-gray-700 text-white px-4 py-2"
+                className="mt-2 ml-2 border bg-black text-white px-4 py-2"
               >
                 Close Queue
               </button>
