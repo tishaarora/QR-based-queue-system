@@ -15,13 +15,16 @@ export default function BusinessDashboard() {
   const [entries, setEntries] =
     useState([]);
 
+  const [sessionInputs, setSessionInputs] =
+    useState({});
+
   const [sessionId, setSessionId] =
     useState("");
 
-  const [selectedQueueId, setSelectedQueueId] =
+  const [selectedQueueName, setSelectedQueueName] =
     useState("");
 
-  const [selectedQueueName, setSelectedQueueName] =
+  const [activeSessionName, setActiveSessionName] =
     useState("");
 
   const [authorized, setAuthorized] =
@@ -124,8 +127,26 @@ export default function BusinessDashboard() {
       fetchQueues();
     };
 
-  const handleSelectQueue =
+  const handleSessionInputChange =
+    (queueId, value) => {
+      setSessionInputs({
+        ...sessionInputs,
+        [queueId]: value,
+      });
+    };
+
+  const handleStartSession =
     async (queue) => {
+      const sessionName =
+        sessionInputs[queue._id];
+
+      if (!sessionName?.trim()) {
+        alert(
+          "Enter session name"
+        );
+        return;
+      }
+
       const res = await fetch(
         "/api/queue/start-session",
         {
@@ -136,6 +157,7 @@ export default function BusinessDashboard() {
           },
           body: JSON.stringify({
             queueId: queue._id,
+            sessionName,
           }),
         }
       );
@@ -143,28 +165,209 @@ export default function BusinessDashboard() {
       const data = await res.json();
 
       if (data.success) {
-        setSelectedQueueId(
-          queue._id
+        setSessionId(
+          data.session._id
         );
 
         setSelectedQueueName(
           queue.queueName
         );
 
-        setEntries([]);
-
-        setSessionId(
-          data.session._id
+        setActiveSessionName(
+          data.session.sessionName
         );
 
-        alert(
-          data.message ||
-            "Queue selected"
-        );
-      } else {
-        alert(data.message);
+        fetchQueues();
       }
     };
+
+  const handleOpenSession =
+    async (queue) => {
+      setSessionId(
+        queue.activeSession._id
+      );
+
+      setSelectedQueueName(
+        queue.queueName
+      );
+
+      setActiveSessionName(
+        queue.activeSession
+          .sessionName
+      );
+    };
+
+const handleResetQueue =
+  async (queue) => {
+    const newSessionName =
+      prompt(
+        "Enter new session name"
+      );
+
+    if (!newSessionName?.trim())
+      return;
+
+    const res = await fetch(
+      "/api/queue/reset-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          sessionId:
+            queue.activeSession
+              ._id,
+          sessionName:
+            newSessionName,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    console.log(
+      "RESET RESPONSE:",
+      data
+    );
+
+    if (data.success) {
+      setSessionId(
+        data.session._id
+      );
+
+      setSelectedQueueName(
+        queue.queueName
+      );
+
+      setActiveSessionName(
+        data.session.sessionName
+      );
+
+      setEntries([]);
+
+      fetchQueues();
+
+      alert(
+        "Session reset successfully"
+      );
+    } else {
+      alert(
+        data.message ||
+          data.error
+      );
+    }
+  };
+
+const handleTogglePause =
+  async (queue) => {
+    let pauseReason = "";
+    let resumeAt = "";
+
+    if (
+      queue.activeSession
+        .status === "active"
+    ) {
+      pauseReason = prompt(
+        "Why are you pausing the queue?"
+      );
+
+      if (
+        !pauseReason?.trim()
+      )
+        return;
+
+      resumeAt = prompt(
+        "When will the queue resume?"
+      );
+
+      if (!resumeAt?.trim())
+        return;
+    }
+
+    const res = await fetch(
+      "/api/queue/toggle-pause",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          sessionId:
+            queue.activeSession
+              ._id,
+          pauseReason,
+          resumeAt,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      fetchQueues();
+
+      if (
+        sessionId ===
+        queue.activeSession._id
+      ) {
+        setActiveSessionName(
+          data.session.sessionName
+        );
+      }
+
+      alert(data.message);
+    } else {
+      alert(
+        data.message ||
+          data.error
+      );
+    }
+  };
+
+const handleCloseQueue =
+  async (queue) => {
+    const res = await fetch(
+      "/api/queue/close-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          sessionId:
+            queue.activeSession
+              ._id,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      if (
+        sessionId ===
+        queue.activeSession._id
+      ) {
+        setSessionId("");
+        setEntries([]);
+        setSelectedQueueName("");
+        setActiveSessionName("");
+      }
+
+      fetchQueues();
+
+      alert(data.message);
+    } else {
+      alert(
+        data.message ||
+          data.error
+      );
+    }
+  };
 
   const handleCallNext =
     async () => {
@@ -211,13 +414,9 @@ export default function BusinessDashboard() {
 
       const data = await res.json();
 
-      alert(
-        data.success
-          ? "Customer completed"
-          : data.message
-      );
-
-      fetchEntries();
+      if (data.success) {
+        fetchEntries();
+      }
     };
 
   if (!authorized) {
@@ -255,9 +454,7 @@ export default function BusinessDashboard() {
           className="border p-2"
         />
 
-        <button
-          className="ml-2 bg-black text-white px-4 py-2"
-        >
+        <button className="ml-2 bg-black text-white px-4 py-2">
           Create
         </button>
       </form>
@@ -276,32 +473,120 @@ export default function BusinessDashboard() {
               {queue.qrCodeUrl}
             </p>
 
-            <button
-              onClick={() =>
-                handleSelectQueue(
-                  queue
-                )
-              }
-              className="mt-2 bg-green-500 text-white px-4 py-2"
-            >
-              Select Queue
-            </button>
+            {!queue.activeSession ? (
+              <>
+                <input
+                  value={
+                    sessionInputs[
+                      queue._id
+                    ] || ""
+                  }
+                  onChange={(e) =>
+                    handleSessionInputChange(
+                      queue._id,
+                      e.target.value
+                    )
+                  }
+                  placeholder="Session Name"
+                  className="border p-2 mt-2"
+                />
+                
+                <button
+                  onClick={() =>
+                    handleStartSession(
+                      queue
+                    )
+                  }
+                  className="mt-2 ml-2 bg-green-500 text-white px-4 py-2"
+                >
+                  Start Session
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="mt-2">
+                  Active Session:
+                  {
+                    queue
+                      .activeSession
+                      .sessionName
+                  }
+                </p>
+                <p>
+                  Status:
+                  {
+                    queue.activeSession
+                      .status
+                  }
+                </p>
+                <button
+                  onClick={() =>
+                    handleOpenSession(
+                      queue
+                    )
+                  }
+                  className="mt-2 bg-blue-500 text-white px-4 py-2"
+                >
+                  Open Session
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleResetQueue(
+                      queue
+                    )
+                  }
+                  className="mt-2 ml-2 bg-red-500 text-white px-4 py-2"
+                >
+                  Reset Session
+                </button>
+                <button
+                  onClick={() =>
+                    handleTogglePause(
+                      queue
+                    )
+                  }
+                  className="mt-2 ml-2 bg-yellow-500 text-white px-4 py-2"
+                >
+                  {queue.activeSession
+                    .status ===
+                  "paused"
+                    ? "Resume Queue"
+                    : "Pause Queue"}
+                </button>
+                <button
+                onClick={() =>
+                  handleCloseQueue(
+                    queue
+                  )
+                }
+                className="mt-2 ml-2 bg-gray-700 text-white px-4 py-2"
+              >
+                Close Queue
+              </button>
+              </>
+            )}
           </div>
         ))}
       </div>
 
       {sessionId && (
         <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">
+          <h2 className="text-2xl font-bold">
             Active Queue:
             {selectedQueueName}
           </h2>
+
+          <p>
+            Session:
+            {activeSessionName}
+          </p>
 
           <button
             onClick={
               handleCallNext
             }
-            className="bg-blue-500 text-white px-4 py-2"
+            className="mt-4 bg-black text-white px-4 py-2"
           >
             Call Next
           </button>

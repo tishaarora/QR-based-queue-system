@@ -19,6 +19,9 @@ export default function JoinQueuePage() {
   const [entry, setEntry] =
     useState(null);
 
+  const [activeSession, setActiveSession] =
+    useState(null);
+
   const checkEntry = async () => {
     const res = await fetch(
       "/api/queue/check-entry",
@@ -38,6 +41,10 @@ export default function JoinQueuePage() {
 
     if (data.success) {
       setEntry(data.entry);
+
+      setActiveSession(
+        data.activeSession
+      );
     }
   };
 
@@ -65,7 +72,9 @@ export default function JoinQueuePage() {
     const data = await res.json();
 
     if (data.success) {
-      setEntry(data.queueEntry);
+      setEntry(
+        data.queueEntry
+      );
 
       alert(
         `Your token number is ${data.tokenNumber}`
@@ -79,9 +88,15 @@ export default function JoinQueuePage() {
   };
 
   const canJoin =
-    !entry ||
-    entry.status === "completed" ||
-    entry.status === "cancelled";
+    activeSession?.status ===
+      "active" &&
+    (
+      !entry ||
+      entry.status ===
+        "completed" ||
+      entry.status ===
+        "cancelled"
+    );
 
   return (
     <div className="p-6">
@@ -104,7 +119,39 @@ export default function JoinQueuePage() {
         <ProfileCard />
       </div>
 
-      {!canJoin && (
+      {!activeSession && (
+        <div className="mt-6 border p-4 rounded">
+          <p>
+            No active session
+            available right now.
+          </p>
+        </div>
+      )}
+
+      {activeSession?.status ===
+        "paused" && (
+        <div className="mt-6 border p-4 rounded">
+          <p>
+            Queue is paused
+          </p>
+
+          <p>
+            Reason:
+            {
+              activeSession.pauseReason
+            }
+          </p>
+
+          <p>
+            Resumes at:
+            {
+              activeSession.resumeAt
+            }
+          </p>
+        </div>
+      )}
+
+      {!canJoin && entry && (
         <div className="mt-6 border p-4 rounded">
           <p>
             Your Token:

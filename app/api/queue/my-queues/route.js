@@ -4,6 +4,7 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import BusinessProfile from "@/models/BusinessProfile";
 import Queue from "@/models/Queue";
+import QueueSession from "@/models/QueueSession";
 
 export async function GET() {
   try {
@@ -53,9 +54,41 @@ export async function GET() {
           businessProfile._id,
       });
 
+    const queuesWithSessions =
+      await Promise.all(
+        queues.map(
+          async (queue) => {
+            const activeSession =
+              await QueueSession.findOne(
+                {
+                  queueId:
+                    queue._id,
+                  status: {
+                    $in: [
+                      "active",
+                      "paused",
+                    ],
+                  },
+                }
+              ).sort({
+                createdAt:
+                  -1,
+              });
+
+            return {
+              ...queue.toObject(),
+              activeSession:
+                activeSession ||
+                null,
+            };
+          }
+        )
+      );
+
     return Response.json({
       success: true,
-      queues,
+      queues:
+        queuesWithSessions,
     });
   } catch (error) {
     return Response.json(

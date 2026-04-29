@@ -23,25 +23,28 @@ export async function POST(req) {
 
     const body = await req.json();
 
-    const existingSession =
-      await QueueSession.findOne({
-        queueId: body.queueId,
-        status: "active",
-      });
+    const activeSession =
+      await QueueSession.findById(
+        body.sessionId
+      );
 
-    if (existingSession) {
+    if (!activeSession) {
       return Response.json({
-        success: true,
-        session:
-          existingSession,
+        success: false,
         message:
-          "Session already active",
+          "Session not found",
       });
     }
 
+    activeSession.status =
+      "closed";
+
+    await activeSession.save();
+
     const newSession =
       await QueueSession.create({
-        queueId: body.queueId,
+        queueId:
+          activeSession.queueId,
         sessionName:
           body.sessionName,
         status: "active",
@@ -52,7 +55,7 @@ export async function POST(req) {
       success: true,
       session: newSession,
       message:
-        "Session started",
+        "Queue reset successfully",
     });
   } catch (error) {
     return Response.json(

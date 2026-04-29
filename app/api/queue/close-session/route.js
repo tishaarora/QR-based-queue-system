@@ -23,36 +23,28 @@ export async function POST(req) {
 
     const body = await req.json();
 
-    const existingSession =
-      await QueueSession.findOne({
-        queueId: body.queueId,
-        status: "active",
-      });
+    const queueSession =
+      await QueueSession.findById(
+        body.sessionId
+      );
 
-    if (existingSession) {
+    if (!queueSession) {
       return Response.json({
-        success: true,
-        session:
-          existingSession,
+        success: false,
         message:
-          "Session already active",
+          "Session not found",
       });
     }
 
-    const newSession =
-      await QueueSession.create({
-        queueId: body.queueId,
-        sessionName:
-          body.sessionName,
-        status: "active",
-        currentToken: 0,
-      });
+    queueSession.status =
+      "closed";
+
+    await queueSession.save();
 
     return Response.json({
       success: true,
-      session: newSession,
       message:
-        "Session started",
+        "Queue closed successfully",
     });
   } catch (error) {
     return Response.json(

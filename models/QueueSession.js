@@ -13,6 +13,19 @@ const QueueSessionSchema = new mongoose.Schema(
       enum: ["active", "paused", "closed"],
       default: "active",
     },
+    pauseReason: {
+      type: String,
+      default: "",
+    },
+
+    resumeAt: {
+      type: String,
+      default: "",
+    },
+    sessionName: {
+      type: String,
+      required: true,
+    },
 
     currentToken: {
       type: Number,
