@@ -19,6 +19,12 @@ export default function JoinQueuePage() {
   const [entry, setEntry] =
     useState(null);
 
+  const [queueInfo, setQueueInfo] =
+    useState(null);
+
+  const [peopleAhead, setPeopleAhead] =
+    useState(0);
+
   const [activeSession, setActiveSession] =
     useState(null);
 
@@ -44,6 +50,12 @@ export default function JoinQueuePage() {
 
       setActiveSession(
         data.activeSession
+      );
+      setQueueInfo(
+        data.queue
+      );
+      setPeopleAhead(
+        data.peopleAhead || 0
       );
     }
   };
@@ -75,7 +87,7 @@ export default function JoinQueuePage() {
       setEntry(
         data.queueEntry
       );
-
+      await checkEntry();
       alert(
         `Your token number is ${data.tokenNumber}`
       );
@@ -114,6 +126,33 @@ export default function JoinQueuePage() {
       <h1 className="text-3xl font-bold">
         Join Queue
       </h1>
+
+      {queueInfo && (
+      <div className="mt-4 border p-4 rounded">
+        <p>
+          Business:
+          {
+            queueInfo.businessName
+          }
+        </p>
+
+        <p>
+          Queue:
+          {
+            queueInfo.queueName
+          }
+        </p>
+
+        {activeSession && (
+          <p>
+            Session:
+            {
+              activeSession.sessionName
+            }
+          </p>
+        )}
+      </div>
+    )}
 
       <div className="mt-6">
         <ProfileCard />
@@ -162,6 +201,15 @@ export default function JoinQueuePage() {
             Status:
             {entry.status}
           </p>
+
+          {entry.status ===
+            "waiting" && (
+            <p>
+              People Ahead:
+              {peopleAhead}
+            </p>
+          )}
+
         </div>
       )}
 

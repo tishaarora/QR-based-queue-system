@@ -36,7 +36,9 @@ export async function POST(req) {
       await Queue.findOne({
         queueSlug:
           body.queueSlug,
-      });
+      }).populate(
+        "businessProfileId"
+      );
 
     const activeSession =
       await QueueSession.findOne({
@@ -57,6 +59,14 @@ export async function POST(req) {
         success: true,
         entry: null,
         activeSession: null,
+        queue: {
+          queueName:
+            queue.queueName,
+          businessName:
+            queue
+              .businessProfileId
+              .businessName,
+        },
       });
     }
 
@@ -69,12 +79,45 @@ export async function POST(req) {
       }).sort({
         createdAt: -1,
       });
+      let peopleAhead = 0;
 
+      if (
+        existingEntry &&
+        existingEntry.status ===
+          "waiting"
+      ) {
+        peopleAhead =
+          await QueueEntry.countDocuments(
+            {
+              sessionId:
+                activeSession._id,
+              tokenNumber: {
+                $lt:
+                  existingEntry.tokenNumber,
+              },
+              status: {
+                $in: [
+                  "waiting",
+                  "called",
+                ],
+              },
+            }
+          );
+      }
     return Response.json({
       success: true,
       entry:
         existingEntry || null,
       activeSession,
+      peopleAhead,
+      queue: {
+        queueName:
+          queue.queueName,
+        businessName:
+          queue
+            .businessProfileId
+            .businessName,
+      },
     });
   } catch (error) {
     return Response.json(
