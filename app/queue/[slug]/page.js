@@ -109,6 +109,39 @@ export default function JoinQueuePage() {
     }
   };
 
+const handleCancel =
+  async () => {
+    const res = await fetch(
+      "/api/queue/cancel-entry",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          entryId:
+            entry._id,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      await checkEntry();
+
+      alert(
+        "Queue cancelled"
+      );
+    } else {
+      alert(
+        data.message ||
+          data.error
+      );
+    }
+  };
+
   const canJoin =
     activeSession?.status ===
       "active" &&
@@ -218,6 +251,17 @@ export default function JoinQueuePage() {
               People Ahead:
               {peopleAhead}
             </p>
+          )}
+          {entry.status ===
+            "waiting" && (
+            <button
+              onClick={
+                handleCancel
+              }
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+            >
+              Cancel Queue
+            </button>
           )}
 
         </div>
