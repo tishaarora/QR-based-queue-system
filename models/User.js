@@ -15,7 +15,13 @@ const UserSchema = new mongoose.Schema({
   profileCompleted: {
     type: Boolean,
     default: false
-  }
+  },
+
+  pushSubscription: {
+    type: Object,
+    default: null,
+  },
+
 });
 
 export default mongoose.models.User ||

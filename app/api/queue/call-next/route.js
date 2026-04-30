@@ -6,6 +6,7 @@ import QueueSession from "@/models/QueueSession";
 import User from "@/models/User";
 import BusinessProfile from "@/models/BusinessProfile";
 import Queue from "@/models/Queue";
+import webpush from "@/lib/webPush";
 
 export async function POST(req) {
   try {
@@ -152,6 +153,20 @@ export async function POST(req) {
         text:
           `Your token number ${nextEntry.tokenNumber} is now being served. Please proceed to the counter.`,
       });
+    }
+
+    if (
+      customer?.pushSubscription
+    ) {
+      await webpush.sendNotification(
+        customer.pushSubscription,
+        JSON.stringify({
+          title:
+            "It's your turn!",
+          body:
+            `Token ${nextEntry.tokenNumber} is now being served.`,
+        })
+      );
     }
 
     queueSession.currentToken =
