@@ -8,6 +8,7 @@ import {
 import {
   useState,
   useEffect,
+  useRef,
 } from "react";
 
 import ProfileCard from "@/components/ProfileCard";
@@ -27,6 +28,9 @@ export default function JoinQueuePage() {
 
   const [activeSession, setActiveSession] =
     useState(null);
+
+  const previousStatus =
+  useRef(null);
 
   const checkEntry = async () => {
     const res = await fetch(
@@ -75,6 +79,29 @@ export default function JoinQueuePage() {
         interval
       );
   }, [params.slug]);
+
+  useEffect(() => {
+    if (
+      entry?.status ===
+        "called" &&
+      previousStatus.current !==
+        "called"
+    ) {
+      const audio =
+        new Audio(
+          "/notification.mp3"
+        );
+
+      audio.play();
+
+      alert(
+        "It's your turn!"
+      );
+    }
+
+    previousStatus.current =
+      entry?.status;
+  }, [entry]);
 
   const handleJoin = async () => {
     const res = await fetch(
@@ -150,7 +177,9 @@ const handleCancel =
       entry.status ===
         "completed" ||
       entry.status ===
-        "cancelled"
+        "cancelled" ||
+      entry.status ===
+        "skipped"
     );
 
   return (
@@ -277,6 +306,20 @@ const handleCancel =
 
           <p>
             You can join again.
+          </p>
+        </div>
+      )}
+
+      {entry?.status ===
+        "skipped" && (
+        <div className="mt-6 border p-4 rounded">
+          <p>
+            You were skipped.
+          </p>
+
+          <p>
+            You can rejoin the
+            queue now.
           </p>
         </div>
       )}

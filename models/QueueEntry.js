@@ -27,6 +27,7 @@ const QueueEntrySchema = new mongoose.Schema(
         "completed",
         "skipped",
         "cancelled",
+        "skipped",
       ],
       default: "waiting",
     },

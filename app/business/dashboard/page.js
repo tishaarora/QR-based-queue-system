@@ -501,6 +501,41 @@ const handleCloseQueue =
       }
     };
 
+  const handleSkipCustomer =
+  async (entryId) => {
+    const res = await fetch(
+      "/api/queue/skip-customer",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          entryId,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setCurrentToken(0);
+
+      fetchEntries();
+
+      alert(
+        "Customer skipped"
+      );
+    } else {
+      alert(
+        data.message ||
+          data.error
+      );
+    }
+  };
+
+
   if (!authorized) {
     return null;
   }
@@ -714,16 +749,29 @@ const handleCloseQueue =
 
             {entry.status ===
               "called" && (
-              <button
-                onClick={() =>
-                  handleCompleteCustomer(
-                    entry._id
-                  )
-                }
-                className="mt-2 bg-purple-500 text-white px-4 py-2"
-              >
-                Complete
-              </button>
+              <>
+                <button
+                  onClick={() =>
+                    handleCompleteCustomer(
+                      entry._id
+                    )
+                  }
+                  className="mt-2 bg-purple-500 text-white px-4 py-2"
+                >
+                  Complete
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSkipCustomer(
+                      entry._id
+                    )
+                  }
+                  className="mt-2 ml-2 bg-red-500 text-white px-4 py-2"
+                >
+                  Skip
+                </button>
+              </>
             )}
           </div>
         ))}

@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
-import { sendEmail } from "@/lib/sendEmail";
+
 import QueueEntry from "@/models/QueueEntry";
 import QueueSession from "@/models/QueueSession";
 import User from "@/models/User";
@@ -9,19 +9,23 @@ import Queue from "@/models/Queue";
 
 export async function POST(req) {
   try {
-    const session = await getServerSession();
+    const session =
+      await getServerSession();
 
     if (!session) {
       return Response.json(
         {
           success: false,
-          message: "Unauthorized",
+          message:
+            "Unauthorized",
         },
         { status: 401 }
       );
     }
 
     await connectDB();
+
+    const body = await req.json();
 
     const user =
       await User.findOne({
@@ -47,11 +51,22 @@ export async function POST(req) {
       );
     }
 
-    const body = await req.json();
+    const currentEntry =
+      await QueueEntry.findById(
+        body.entryId
+      );
+
+    if (!currentEntry) {
+      return Response.json({
+        success: false,
+        message:
+          "Entry not found",
+      });
+    }
 
     const queueSession =
       await QueueSession.findById(
-        body.sessionId
+        currentEntry.sessionId
       );
 
     if (!queueSession) {
@@ -61,6 +76,7 @@ export async function POST(req) {
           "Session not found",
       });
     }
+
     const queue =
       await Queue.findById(
         queueSession.queueId
@@ -81,93 +97,39 @@ export async function POST(req) {
       );
     }
 
-    // complete current called customer
-    const currentCalled =
-      await QueueEntry.findOne({
-        sessionId: body.sessionId,
-        status: "called",
-      }).sort({
-        tokenNumber: 1,
-      });
-
-    if (currentCalled) {
-      currentCalled.status =
-        "completed";
-
-      await currentCalled.save();
-    }
-
-    // call next waiting customer
-    const nextEntry =
-      await QueueEntry.findOne({
-        sessionId: body.sessionId,
-        status: "waiting",
-      }).sort({
-        tokenNumber: 1,
-      });
-
-    if (!nextEntry) {
-      const queueSession =
-        await QueueSession.findById(
-          body.sessionId
-        );
-
-      if (queueSession) {
-        queueSession.currentToken =
-          0;
-
-        await queueSession.save();
-      }
-
+    if (
+      currentEntry.status !==
+      "called"
+    ) {
       return Response.json({
         success: false,
         message:
-          "No waiting customers",
+          "Only called customers can be skipped",
       });
     }
 
-    nextEntry.status = "called";
+    currentEntry.status =
+      "skipped";
 
-    await nextEntry.save();
-
-    const customer =
-      await User.findById(
-        nextEntry.customerId
-      );
-      console.log(
-        "CUSTOMER:",
-        customer
-      );
-
-      console.log(
-        "CUSTOMER EMAIL:",
-        customer?.email
-      );
-
-    if (customer?.email) {
-      await sendEmail({
-        to: customer.email,
-        subject:
-          "It's your turn!",
-        text:
-          `Your token number ${nextEntry.tokenNumber} is now being served. Please proceed to the counter.`,
-      });
-    }
+    await currentEntry.save();
 
     queueSession.currentToken =
-      nextEntry.tokenNumber;
+      0;
 
     await queueSession.save();
 
     return Response.json({
       success: true,
-      queueEntry: nextEntry,
+      entry: currentEntry,
+      message:
+        "Customer skipped",
     });
   } catch (error) {
     return Response.json(
       {
         success: false,
-        error: error.message,
+        error:
+          error.message,
       },
       { status: 500 }
     );

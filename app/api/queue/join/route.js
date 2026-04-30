@@ -70,13 +70,21 @@ export async function POST(req) {
     });
   }
 
-    const nextToken =
-      (activeSession.lastToken || 0) + 1;
+  const updatedSession =
+    await QueueSession.findByIdAndUpdate(
+      activeSession._id,
+      {
+        $inc: {
+          lastToken: 1,
+        },
+      },
+      {
+        new: true,
+      }
+    );
 
-    activeSession.lastToken =
-      nextToken;
-
-    await activeSession.save();
+  const nextToken =
+    updatedSession.lastToken;
 
     const queueEntry =
       await QueueEntry.findOneAndUpdate(
